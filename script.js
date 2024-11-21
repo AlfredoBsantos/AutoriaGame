@@ -22,6 +22,13 @@ const keys = { // Objeto para armazenar o estado das teclas
 
 let currentDirection = 0; // Direção atual (0: baixo, 1: esquerda, 2: direita, 3: cima)
 
+// Define barreiras como uma lista de objetos retangulares
+const barriers = [
+    { x: 10, y: 10, width: 20, height: 100 },
+    { x: 150, y: 150, width: 100, height: 50 },
+
+];
+
 // Adiciona event listeners para as teclas
 window.addEventListener('keydown', (e) => {
     if (e.key in keys) {
@@ -34,6 +41,21 @@ window.addEventListener('keyup', (e) => {
         keys[e.key] = false;
     }
 });
+
+// Função para detectar colisão
+function checkCollision(newX, newY) {
+    for (let barrier of barriers) {
+        if (
+            newX < barrier.x + barrier.width &&
+            newX + SPRITE_WIDTH > barrier.x &&
+            newY < barrier.y + barrier.height &&
+            newY + SPRITE_HEIGHT > barrier.y
+        ) {
+            return true;
+        }
+    }
+    return false;
+}
 
 // Função para desenhar um frame específico
 function drawFrame(frameX, frameY, canvasX, canvasY) {
@@ -49,28 +71,43 @@ function drawFrame(frameX, frameY, canvasX, canvasY) {
         SPRITE_WIDTH,
         SPRITE_HEIGHT
     );
+
+    // Desenha as barreiras
+    ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+    for (let barrier of barriers) {
+        ctx.fillRect(barrier.x, barrier.y, barrier.width, barrier.height);
+    }
 }
 
 // Função de animação
 function animate() {
     tickCount++;
 
+    let newX = x;
+    let newY = y;
+
     // Atualiza a posição do personagem
     if (keys.ArrowUp) {
-        y -= 2;
+        newY -= 2;
         currentDirection = 3;
     }
     if (keys.ArrowDown) {
-        y += 2;
+        newY += 2;
         currentDirection = 0;
     }
     if (keys.ArrowLeft) {
-        x -= 2;
+        newX -= 2;
         currentDirection = 1;
     }
     if (keys.ArrowRight) {
-        x += 2;
+        newX += 2;
         currentDirection = 2;
+    }
+
+    // Verifica colisão antes de mover o personagem
+    if (!checkCollision(newX, newY)) {
+        x = newX;
+        y = newY;
     }
 
     // Anima apenas se houver movimento
