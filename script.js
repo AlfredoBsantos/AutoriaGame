@@ -20,13 +20,12 @@ const keys = { // Objeto para armazenar o estado das teclas
     ArrowRight: false
 };
 
-let currentDirection = 0; // Direção atual (0: baixo, 1: esquerda, 2: direita, 3: cima)
+let currentDirection = 0; // Direção atual (0: baixo, 1: direita, 2: cima, 3: esquerda)
 
 // Define barreiras como uma lista de objetos retangulares
 const barriers = [
     { x: 10, y: 10, width: 20, height: 100 },
     { x: 150, y: 150, width: 100, height: 50 },
-
 ];
 
 // Adiciona event listeners para as teclas
@@ -89,19 +88,19 @@ function animate() {
     // Atualiza a posição do personagem
     if (keys.ArrowUp) {
         newY -= 2;
-        currentDirection = 3;
+        currentDirection = 2; // Cima (terceira linha)
     }
     if (keys.ArrowDown) {
         newY += 2;
-        currentDirection = 0;
+        currentDirection = 0; // Baixo (primeira linha)
     }
     if (keys.ArrowLeft) {
         newX -= 2;
-        currentDirection = 1;
+        currentDirection = 3; // Esquerda (quarta linha)
     }
     if (keys.ArrowRight) {
         newX += 2;
-        currentDirection = 2;
+        currentDirection = 1; // Direita (segunda linha)
     }
 
     // Verifica colisão antes de mover o personagem
