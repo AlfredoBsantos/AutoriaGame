@@ -4,14 +4,17 @@ const ctx = canvas.getContext('2d');
 const spriteSheet = new Image();
 spriteSheet.src = 'img/character.png'; // Caminho da imagem dos sprites
 
+const mapImage = new Image();
+mapImage.src = 'img/mapa-cave1.jpg'; // Caminho da imagem do mapa
+
 const SPRITE_WIDTH = 16;  // Largura de um frame
 const SPRITE_HEIGHT = 32; // Altura de um frame
 const TICKS_PER_FRAME = 10; // Velocidade da animação
 let frameIndex = 0;       // Índice do frame atual
 let tickCount = 0;        // Contador de ticks
 
-let x = 100; // Posição inicial X do personagem
-let y = 100; // Posição inicial Y do personagem
+let x = 250; // Posição inicial X do personagem
+let y = 250; // Posição inicial Y do personagem
 
 const keys = { // Objeto para armazenar o estado das teclas
     ArrowUp: false,
@@ -24,8 +27,13 @@ let currentDirection = 0; // Direção atual (0: baixo, 1: direita, 2: cima, 3: 
 
 // Define barreiras como uma lista de objetos retangulares
 const barriers = [
-    { x: 10, y: 10, width: 20, height: 100 },
-    { x: 150, y: 150, width: 100, height: 50 },
+    { x: 0, y: 0, width: 500, height: 25 }, // Bordas superiores
+    { x: 0, y: 475, width: 500, height: 25 }, // Bordas inferiores
+    { x: 0, y: 0, width: 25, height: 500 }, // Bordas esquerdas
+    { x: 475, y: 0, width: 25, height: 500 }, // Bordas direitas
+    { x: 75, y: 75, width: 50, height: 50 }, // Obstáculo no canto superior esquerdo
+    { x: 200, y: 200, width: 100, height: 50 }, // Obstáculo central
+    { x: 350, y: 350, width: 75, height: 75 }  // Obstáculo no canto inferior direito
 ];
 
 // Adiciona event listeners para as teclas
@@ -50,7 +58,7 @@ function checkCollision(newX, newY) {
             newY < barrier.y + barrier.height &&
             newY + SPRITE_HEIGHT > barrier.y
         ) {
-            return true;
+            return true; // Colisão detectada
         }
     }
     return false;
@@ -59,6 +67,7 @@ function checkCollision(newX, newY) {
 // Função para desenhar um frame específico
 function drawFrame(frameX, frameY, canvasX, canvasY) {
     ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpa o canvas
+    ctx.drawImage(mapImage, 0, 0, canvas.width, canvas.height); // Desenha o mapa
     ctx.drawImage(
         spriteSheet,
         frameX * SPRITE_WIDTH,
