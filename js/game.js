@@ -15,6 +15,10 @@ characterImage.src = './img/character.png'; // O nome do arquivo do personagem
 const heartImage = new Image();
 heartImage.src = './img/Heart.png'; // Caminho para a imagem do coração
 
+// Carregar a imagem do inimigo
+const enemyImage = new Image();
+enemyImage.src = './img/log.png'; // Caminho para a imagem do inimigo (log.png)
+
 // Ajustar o tamanho do canvas com base no mapa
 const mapWidth = mapData ? mapData.width * tileSize : 0;
 const mapHeight = mapData ? mapData.height * tileSize : 0;
@@ -31,7 +35,7 @@ const player = {
   frameY: 0,
   attackFrameX: 0,
   attackFrameY: 0,
-  speed: 2,
+  speed: 1,
   direction: 'down',
   isMoving: false,
   isAttacking: false,
@@ -40,6 +44,20 @@ const player = {
   lastAnimationUpdate: 0,
   lives: 3, // Número inicial de vidas
   maxLives: 5, // Vida máxima
+};
+
+// Definir as propriedades do inimigo
+const enemy = {
+  x: 200, // Posição inicial X
+  y: 150, // Posição inicial Y
+  width: 32, // Largura do inimigo
+  height: 32, // Altura do inimigo
+  frameX: 0, // Frame X inicial
+  frameY: 0, // Frame Y inicial (direção do inimigo)
+  speed: 0.5, // Velocidade do inimigo
+  isMoving: true, // Define se o inimigo está se movendo
+  animationSpeed: 200, // Velocidade da animação do inimigo
+  lastAnimationUpdate: 0, // Marcação de tempo da última atualização da animação
 };
 
 // Capturar as teclas pressionadas
@@ -66,7 +84,7 @@ function checkCollision(x, y) {
   const tileIndex = tileY * mapData.width + tileX;
 
   const tile = data[tileIndex];
-  return tile === 0; // Verifica se o tile é 1441, que é a colisão
+  return tile === 1441; // Verifica se o tile é 1441, que é a colisão
 }
 
 // Funções de vida
@@ -105,6 +123,81 @@ function updateAnimation() {
   }
 }
 
+// Função para mover o inimigo
+function moveEnemy() {
+  if (enemy.isMoving) {
+    const dx = player.x - enemy.x; // Distância no eixo X
+    const dy = player.y - enemy.y; // Distância no eixo Y
+
+    const distance = Math.sqrt(dx * dx + dy * dy); // Distância euclidiana
+
+    if (distance > 1) { // Se o inimigo não estiver no mesmo local que o jogador
+      // Normalizar a direção
+      const directionX = dx / distance;
+      const directionY = dy / distance;
+
+      // Atualiza a direção com base na maior componente de movimento
+      if (Math.abs(directionX) > Math.abs(directionY)) {
+        // Movendo na direção horizontal (esquerda/direita)
+        enemy.x += directionX * enemy.speed;
+        if (directionX > 0) {
+          enemy.frameY = 2; // Direção direita
+        } else {
+          enemy.frameY = 3; // Direção esquerda
+        }
+      } else {
+        // Movendo na direção vertical (cima/baixo)
+        enemy.y += directionY * enemy.speed;
+        if (directionY > 0) {
+          enemy.frameY = 0; // Direção para baixo
+        } else {
+          enemy.frameY = 1; // Direção para cima
+        }
+      }
+
+      // Atualizar a animação
+      const currentTime = Date.now();
+      if (currentTime - enemy.lastAnimationUpdate >= enemy.animationSpeed) {
+        enemy.lastAnimationUpdate = currentTime;
+        enemy.frameX = (enemy.frameX + 1) % 4; // Alterna entre os 4 quadros
+      }
+    }
+  }
+}
+
+// Função para desenhar o inimigo com animação
+function drawEnemy() {
+  const frameX = enemy.frameX;
+  const frameY = enemy.frameY;
+
+  ctx.drawImage(
+    enemyImage,
+    frameX * enemy.width, frameY * enemy.height, // Define o quadro correto da animação
+    enemy.width, enemy.height, // Tamanho do inimigo
+    enemy.x, enemy.y, // Posição no canvas
+    enemy.width, enemy.height // Tamanho no canvas
+  );
+}
+
+// Função para verificar colisão entre o inimigo e o jogador
+function checkEnemyCollision() {
+  const playerLeft = player.x;
+  const playerRight = player.x + player.width;
+  const playerTop = player.y;
+  const playerBottom = player.y + player.height;
+
+  const enemyLeft = enemy.x;
+  const enemyRight = enemy.x + enemy.width;
+  const enemyTop = enemy.y;
+  const enemyBottom = enemy.y + enemy.height;
+
+  // Verifica se há colisão
+  if (playerRight > enemyLeft && playerLeft < enemyRight && playerBottom > enemyTop && playerTop < enemyBottom) {
+    takeDamage(1); // Chama a função de dano (reduz a vida do jogador)
+  }
+}
+
+// Função para mover o jogador
 function movePlayer() {
   player.isMoving = false;
 
@@ -148,7 +241,7 @@ function movePlayer() {
   }
 }
 
-// Desenhar os corações de vida
+// Função para desenhar os corações de vida
 function drawLives() {
   const heartSize = 20; // Tamanho de cada coração
   const startX = 10; // Posição inicial no eixo X
@@ -161,9 +254,7 @@ function drawLives() {
   }
 }
 
-
-
-// Desenhar o mapa
+// Função para desenhar o mapa
 function drawMap() {
   if (!mapData || !mapData.layers) {
     console.error("Erro: Mapa ou camadas não carregadas corretamente.");
@@ -194,7 +285,7 @@ function drawMap() {
   });
 }
 
-// Desenhar o personagem
+// Função para desenhar o personagem
 function drawPlayer() {
   let frameX = player.frameX;
   let frameY = player.frameY;
@@ -222,13 +313,17 @@ function drawPlayer() {
 
 // Loop principal do jogo
 function gameLoop() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawMap();
-  movePlayer();
-  updateAnimation();
-  drawPlayer();
-  drawLives(); // Desenhar os corações de vida
-  requestAnimationFrame(gameLoop);
+  ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpa o canvas
+  drawMap(); // Desenha o mapa
+  movePlayer(); // Movimenta o personagem
+  updateAnimation(); // Atualiza a animação do personagem
+  drawPlayer(); // Desenha o personagem
+  moveEnemy(); // Atualiza o movimento do inimigo
+  drawEnemy(); // Desenha o inimigo
+  checkEnemyCollision(); // Verifica colisão com o inimigo
+  drawLives(); // Desenha as vidas
+
+  requestAnimationFrame(gameLoop); // Chama o loop novamente
 }
 
 // Iniciar o jogo
