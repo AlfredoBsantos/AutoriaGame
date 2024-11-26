@@ -46,6 +46,9 @@ const player = {
   lastAnimationUpdate: 0,
   lives: 3, // Número inicial de vidas
   maxLives: 5, // Vida máxima
+  invulnerable: false, // Jogador começa vulnerável
+  invulnerabilityDuration: 3000, // Duração de invulnerabilidade (3 segundo)
+  lastDamageTime: 0, // Momento do último dano
 };
 
 // Definir as propriedades do inimigo
@@ -89,13 +92,31 @@ function checkCollision(x, y) {
   return tile === 1441; // Verifica se o tile é 1441, que é a colisão
 }
 
-// Funções de vida
-function takeDamage(amount) {
-  player.lives -= amount;
-  if (player.lives <= 0) {
-    gameOver();
+// função para atualizar estado do jogador 
+function updatePlayerState() {
+  const currentTime = Date.now();
+
+  if (player.invulnerable && currentTime - player.lastDamageTime > player.invulnerabilityDuration) {
+    player.invulnerable = false;
   }
 }
+
+// Funções de vida
+function takeDamage(amount) {
+  const currentTime = Date.now();
+
+  if (!player.invulnerable && player.lives > 0) {
+    player.lives -= amount;
+    player.lives = Math.max(0, player.lives); // Garante que não fique abaixo de 0
+    player.invulnerable = true;
+    player.lastDamageTime = currentTime;
+
+    if (player.lives <= 0) {
+      gameOver();
+    }
+  }
+}
+
 
 function heal(amount) {
   player.lives = Math.min(player.lives + amount, player.maxLives);
@@ -125,7 +146,6 @@ function updateAnimation() {
   }
 }
 
-// Função para mover o inimigo
 // Função para mover o inimigo (somente se o diálogo do NPC estiver concluído)
 function moveEnemy() {
   if (!npc.dialogueCompleted) return; // Só processa se o diálogo estiver concluído
@@ -504,15 +524,11 @@ function gameLoop() {
   drawNPC(); // Desenha o NPC se estiver visível
   moveEnemy(); // Movimenta o inimigo (se permitido)
   drawEnemy(); // Desenha o inimigo (se permitido)
+  updatePlayerState(); // Atualiza o estado do jogador (invulnerabilidade)
   checkEnemyCollision(); // Verifica colisão com o inimigo (se permitido)
   drawLives(); // Desenha as vidas
 
   requestAnimationFrame(gameLoop); // Chama o loop novamente
 }
-
-
-
-
-
 // Iniciar o jogo
 gameLoop();
