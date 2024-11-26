@@ -19,6 +19,10 @@ heartImage.src = './img/Heart.png'; // Caminho para a imagem do coração
 const enemyImage = new Image();
 enemyImage.src = './img/log.png'; // Caminho para a imagem do inimigo (log.png)
 
+// Carregar a imagem do NPC
+const npcImage = new Image()
+npcImage.src = './img/NPC_test.png';
+
 // Ajustar o tamanho do canvas com base no mapa
 const mapWidth = mapData ? mapData.width * tileSize : 0;
 const mapHeight = mapData ? mapData.height * tileSize : 0;
@@ -46,8 +50,8 @@ const player = {
 
 // Definir as propriedades do inimigo
 const enemy = {
-  x: 200, // Posição inicial X
-  y: 150, // Posição inicial Y
+  x: 230, // Posição inicial X
+  y: 460, // Posição inicial Y
   width: 32, // Largura do inimigo
   height: 32, // Altura do inimigo
   frameX: 0, // Frame X inicial
@@ -122,46 +126,56 @@ function updateAnimation() {
 }
 
 // Função para mover o inimigo
+// Função para mover o inimigo (somente se o diálogo do NPC estiver concluído)
 function moveEnemy() {
+  if (!npc.dialogueCompleted) return; // Só processa se o diálogo estiver concluído
+
   if (enemy.isMoving) {
-    const dx = player.x - enemy.x; // Distância no eixo X
-    const dy = player.y - enemy.y; // Distância no eixo Y
+    const dx = player.x - enemy.x;
+    const dy = player.y - enemy.y;
 
-    const distance = Math.sqrt(dx * dx + dy * dy); // Distância euclidiana
+    const distance = Math.sqrt(dx * dx + dy * dy);
 
-    if (distance > 1) { // Se o inimigo não estiver no mesmo local que o jogador
-      // Normalizar a direção
+    if (distance > 1) {
       const directionX = dx / distance;
       const directionY = dy / distance;
 
-      // Atualiza a direção com base na maior componente de movimento
       if (Math.abs(directionX) > Math.abs(directionY)) {
-        // Movendo na direção horizontal (esquerda/direita)
         enemy.x += directionX * enemy.speed;
-        if (directionX > 0) {
-          enemy.frameY = 2; // Direção direita
-        } else {
-          enemy.frameY = 3; // Direção esquerda
-        }
+        enemy.frameY = directionX > 0 ? 2 : 3; // Direção horizontal
       } else {
-        // Movendo na direção vertical (cima/baixo)
         enemy.y += directionY * enemy.speed;
-        if (directionY > 0) {
-          enemy.frameY = 0; // Direção para baixo
-        } else {
-          enemy.frameY = 1; // Direção para cima
-        }
+        enemy.frameY = directionY > 0 ? 0 : 1; // Direção vertical
       }
 
-      // Atualizar a animação
       const currentTime = Date.now();
       if (currentTime - enemy.lastAnimationUpdate >= enemy.animationSpeed) {
         enemy.lastAnimationUpdate = currentTime;
-        enemy.frameX = (enemy.frameX + 1) % 4; // Alterna entre os 4 quadros
+        enemy.frameX = (enemy.frameX + 1) % 4;
       }
     }
   }
 }
+
+// Função para desenhar o inimigo (somente se o diálogo do NPC estiver concluído)
+function drawEnemy() {
+  if (!npc.dialogueCompleted) return; // Só desenha se o diálogo estiver concluído
+
+  const frameX = enemy.frameX;
+  const frameY = enemy.frameY;
+
+  const drawX = enemy.x - camera.x;
+  const drawY = enemy.y - camera.y;
+
+  ctx.drawImage(
+    enemyImage,
+    frameX * enemy.width, frameY * enemy.height,
+    enemy.width, enemy.height,
+    drawX, drawY,
+    enemy.width, enemy.height
+  );
+}
+
 
 // Função para desenhar o inimigo com animação
 function drawEnemy() {
@@ -351,22 +365,153 @@ function drawEnemy() {
   );
 }
 
+const npc = {
+  x: 350, // Posição onde o NPC aparece
+  y: 37,
+  width: 16,
+  height: 32,
+  frameX: 0,
+  frameY: 0,
+  text: "Olá, aventureiro!", // Mensagem do NPC
+  visible: false, // Inicialmente invisível
+  dialogueCompleted: false, // Define se o diálogo foi concluído
+  activationArea: { // Área onde o NPC será ativado
+    x: 350,
+    y: 40,
+    width: 100,
+    height: 100,
+  },
+};
+
+
+function moveNPC() {
+  const currentTime = Date.now();
+
+  // Movimento simples: Alterna direção a cada 2 segundos
+  // if (currentTime % 2000 < 1000) {
+  //   npc.x += npc.speed; // Move para baixo
+  //   npc.frameX = 0; // Quadro para direção para baixo
+  // } else {
+  //   npc.x -= npc.speed; // Move para cima
+  //   npc.frameX = 2; // Quadro para direção para cima
+  // }
+
+  // Atualizar animação
+  if (currentTime - npc.lastAnimationUpdate >= npc.animationSpeed) {
+    npc.lastAnimationUpdate = currentTime;
+    npc.frameX = (npc.frameX + 1) % 4; // Alterna entre os quadros
+  }
+}
+
+
+// Controle da interação com o diálogo
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && npc.isVisible && !npc.dialogueCompleted) {
+    npc.dialogueIndex++;
+
+    // Verifica se o diálogo foi concluído
+    if (npc.dialogueIndex >= dialogue.length) {
+      npc.dialogueCompleted = true; // Marcar como concluído
+      npc.isVisible = false; // NPC desaparece
+    }
+  }
+});
+
+function drawNPC() {
+  if (!npc.visible) return; // Se o NPC não estiver visível, não desenha
+
+  const drawX = npc.x - camera.x;
+  const drawY = npc.y - camera.y;
+
+  ctx.drawImage(
+    npcImage, // Usa a imagem carregada corretamente
+    0, 0, npc.width, npc.height,
+    drawX, drawY,
+    npc.width, npc.height
+  );
+}
+
+function handleNPCDialogue() {
+  if (!npc.visible || npc.dialogueCompleted) return;
+
+  // Desenha a caixa de diálogo
+  const dialogueBoxWidth = canvas.width * 0.8;
+  const dialogueBoxHeight = 50;
+  const dialogueBoxX = (canvas.width - dialogueBoxWidth) / 2;
+  const dialogueBoxY = canvas.height - dialogueBoxHeight - 10;
+
+  ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+  ctx.fillRect(dialogueBoxX, dialogueBoxY, dialogueBoxWidth, dialogueBoxHeight);
+
+  ctx.fillStyle = "white";
+  ctx.font = "16px Arial";
+  ctx.textAlign = "center";
+
+  const currentDialogue = dialogue[npc.dialogueIndex];
+  const text = currentDialogue.text;
+  ctx.fillText(text, dialogueBoxX + dialogueBoxWidth / 2, dialogueBoxY + dialogueBoxHeight / 2 + 5);
+}
+
+function checkNPCActivation() {
+  if (!npc.visible && !npc.dialogueCompleted) {
+    const playerInArea =
+      player.x + player.width > npc.activationArea.x &&
+      player.x < npc.activationArea.x + npc.activationArea.width &&
+      player.y + player.height > npc.activationArea.y &&
+      player.y < npc.activationArea.y + npc.activationArea.height;
+
+    if (playerInArea) {
+      npc.visible = true; // Torna o NPC visível
+    }
+  }
+}
+
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && npc.visible && !npc.dialogueCompleted) {
+    npc.dialogueIndex++;
+
+    if (npc.dialogueIndex >= dialogue.length) {
+      npc.dialogueCompleted = true; // Marca como concluído
+      npc.visible = false; // NPC desaparece
+    }
+  }
+});
+
+
+// Diálogo do NPC e do personagem
+const dialogue = [
+  { speaker: 'npc', text: "Olá, viajante! Você está perdido?" },
+  { speaker: 'player', text: "Não estou perdido, só explorando o local." },
+  { speaker: 'npc', text: "Bem, cuidado! Há perigos à frente." },
+  { speaker: 'player', text: "Obrigado pelo aviso! Vou me preparar." },
+];
+
+npc.dialogueIndex = 0; // Índice para controlar o diálogo
+npc.dialogueCompleted = false; // Controle de diálogo finalizado
+
+
 
 // Loop principal do jogo
 function gameLoop() {
   ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpa o canvas
   updateCamera(); // Atualiza a câmera
   drawMap(); // Desenha o mapa
-  movePlayer(); // Movimenta o personagem
-  updateAnimation(); // Atualiza a animação do personagem
-  drawPlayer(); // Desenha o personagem
-  moveEnemy(); // Atualiza o movimento do inimigo
-  drawEnemy(); // Desenha o inimigo
-  checkEnemyCollision(); // Verifica colisão com o inimigo
+  movePlayer(); // Movimenta o jogador
+  updateAnimation(); // Atualiza a animação do jogador
+  drawPlayer(); // Desenha o jogador
+  checkNPCActivation(); // Ativa o NPC se o jogador estiver na área
+  handleNPCDialogue(); // Gerencia o diálogo com o NPC
+  drawNPC(); // Desenha o NPC se estiver visível
+  moveEnemy(); // Movimenta o inimigo (se permitido)
+  drawEnemy(); // Desenha o inimigo (se permitido)
+  checkEnemyCollision(); // Verifica colisão com o inimigo (se permitido)
   drawLives(); // Desenha as vidas
 
   requestAnimationFrame(gameLoop); // Chama o loop novamente
 }
+
+
+
 
 
 // Iniciar o jogo
