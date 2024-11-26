@@ -22,8 +22,6 @@ enemyImage.src = './img/log.png'; // Caminho para a imagem do inimigo (log.png)
 // Ajustar o tamanho do canvas com base no mapa
 const mapWidth = mapData ? mapData.width * tileSize : 0;
 const mapHeight = mapData ? mapData.height * tileSize : 0;
-canvas.width = mapWidth;  // Define a largura do canvas
-canvas.height = mapHeight; // Define a altura do canvas
 
 // Configuração do personagem
 const player = {
@@ -241,11 +239,25 @@ function movePlayer() {
   }
 }
 
+const camera = {
+  x: 0,
+  y: 0,
+  width: canvas.width,
+  height: canvas.height,
+};
+
+// Atualiza a posição da câmera para centralizar no jogador
+function updateCamera() {
+  camera.x = Math.max(0, Math.min(player.x - camera.width / 2, mapWidth - camera.width));
+  camera.y = Math.max(0, Math.min(player.y - camera.height / 2, mapHeight - camera.height));
+}
+
+
 // Função para desenhar os corações de vida
 function drawLives() {
   const heartSize = 20; // Tamanho de cada coração
-  const startX = 10; // Posição inicial no eixo X
-  const startY = 10; // Posição inicial no eixo Y
+  const startX = 10; // Posição inicial no eixo X (fixa na tela)
+  const startY = 10; // Posição inicial no eixo Y (fixa na tela)
   const spacing = 5; // Espaçamento entre os corações
 
   for (let i = 0; i < player.lives; i++) {
@@ -253,6 +265,7 @@ function drawLives() {
     ctx.drawImage(heartImage, x, startY, heartSize, heartSize);
   }
 }
+
 
 // Função para desenhar o mapa
 function drawMap() {
@@ -276,19 +289,30 @@ function drawMap() {
         const sourceX = (tile - 1) % 40 * tileSize;
         const sourceY = Math.floor((tile - 1) / 40) * tileSize;
 
-        const destX = (index % width) * tileSize;
-        const destY = Math.floor(index / width) * tileSize;
+        const destX = (index % width) * tileSize - camera.x;
+        const destY = Math.floor(index / width) * tileSize - camera.y;
 
-        ctx.drawImage(tilesetImage, sourceX, sourceY, tileSize, tileSize, destX, destY, tileSize, tileSize);
+        if (
+          destX + tileSize > 0 &&
+          destX < camera.width &&
+          destY + tileSize > 0 &&
+          destY < camera.height
+        ) {
+          ctx.drawImage(tilesetImage, sourceX, sourceY, tileSize, tileSize, destX, destY, tileSize, tileSize);
+        }
       }
     });
   });
 }
 
+
 // Função para desenhar o personagem
 function drawPlayer() {
   let frameX = player.frameX;
   let frameY = player.frameY;
+
+  const drawX = player.x - camera.x;
+  const drawY = player.y - camera.y;
 
   if (player.isAttacking) {
     frameX = player.attackFrameX;
@@ -297,7 +321,7 @@ function drawPlayer() {
       characterImage,
       frameX * player.width * 2, frameY * player.height,
       player.width * 2, player.height,
-      player.x - player.width / 2, player.y,
+      drawX - player.width / 2, drawY,
       player.width * 2, player.height
     );
   } else {
@@ -305,15 +329,33 @@ function drawPlayer() {
       characterImage,
       frameX * player.width, frameY * player.height,
       player.width, player.height,
-      player.x, player.y,
+      drawX, drawY,
       player.width, player.height
     );
   }
 }
 
+function drawEnemy() {
+  const frameX = enemy.frameX;
+  const frameY = enemy.frameY;
+
+  const drawX = enemy.x - camera.x;
+  const drawY = enemy.y - camera.y;
+
+  ctx.drawImage(
+    enemyImage,
+    frameX * enemy.width, frameY * enemy.height,
+    enemy.width, enemy.height,
+    drawX, drawY,
+    enemy.width, enemy.height
+  );
+}
+
+
 // Loop principal do jogo
 function gameLoop() {
   ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpa o canvas
+  updateCamera(); // Atualiza a câmera
   drawMap(); // Desenha o mapa
   movePlayer(); // Movimenta o personagem
   updateAnimation(); // Atualiza a animação do personagem
@@ -325,6 +367,7 @@ function gameLoop() {
 
   requestAnimationFrame(gameLoop); // Chama o loop novamente
 }
+
 
 // Iniciar o jogo
 gameLoop();
