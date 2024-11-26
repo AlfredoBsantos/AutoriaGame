@@ -9,6 +9,10 @@ const tileSize = 16; // Tamanho do tile (16x16)
 const tilesetImage = new Image();
 tilesetImage.src = './img/Overworld.png'; // O nome correto do tileset
 
+// Carregar a imagem de game over
+const gameOverImage = new Image();
+gameOverImage.src = './img/gameover.png'; // Caminho para a imagem de game over
+
 const characterImage = new Image();
 characterImage.src = './img/character.png'; // O nome do arquivo do personagem
 
@@ -76,6 +80,8 @@ window.addEventListener('keyup', (e) => {
   keys[e.key] = false;
 });
 
+let isGameOver = false;
+
 // Função para verificar colisões
 function checkCollision(x, y) {
   if (!mapData || !mapData.layers) return false;
@@ -124,7 +130,38 @@ function heal(amount) {
 
 function gameOver() {
   console.log("Game Over!");
-  // Reiniciar o jogo ou implementar tela de fim
+  isGameOver = true; // Define que o jogo terminou
+}
+
+// Função para desenhar a imagem de game over
+function drawGameOverImage() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpa o canvas
+  ctx.drawImage(gameOverImage, 0, 0, canvas.width, canvas.height); // Desenha a imagem de game over em toda a tela
+}
+
+function resetGame() {
+  isGameOver = false; // Redefine o estado de Game Over
+  player.lives = 3; // Reinicia as vidas do jogador
+  player.x = 100; // Reinicia a posição do jogador
+  player.y = 100;
+
+  // Reinicie o NPC
+  npc.x = 350; // Reinicia a posição do NPC
+  npc.y = 37;
+  npc.visible = false; // Torna o NPC invisível
+  npc.dialogueIndex = 0; // Reinicia o índice do diálogo
+  npc.dialogueCompleted = false; // Marca o diálogo como não concluído
+
+  // Reinicie a posição dos inimigos e outros elementos do jogo
+  enemy.x = 700;
+  enemy.y = 150;
+
+  // Reinicie o estado da câmera ou outras variáveis globais, se necessário
+  camera.x = 0;
+  camera.y = 0;
+
+  // Reinicie o loop do jogo
+  gameLoop();
 }
 
 // Função para atualizar a animação
@@ -509,11 +546,23 @@ const dialogue = [
 npc.dialogueIndex = 0; // Índice para controlar o diálogo
 npc.dialogueCompleted = false; // Controle de diálogo finalizado
 
-
+window.addEventListener('keydown', (e) => {
+  if ((e.key === 'r' || e.key === 'R') && isGameOver) {
+    resetGame(); // Chama a função para reiniciar o jogo
+  }
+});
 
 // Loop principal do jogo
 function gameLoop() {
   ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpa o canvas
+
+  if (isGameOver) {
+    // Exibe a tela de Game Over
+    drawGameOverImage();
+    return; // Interrompe o loop enquanto está no estado de "Game Over"
+  }
+
+  // Atualizações normais do jogo
   updateCamera(); // Atualiza a câmera
   drawMap(); // Desenha o mapa
   movePlayer(); // Movimenta o jogador
