@@ -4,7 +4,7 @@ body {
     justify-content: center;
     align-items: center;
     height: 100vh;
-    background-image: url("../img/fundo.png");
+    background-color: black;
   }
   
   canvas {
