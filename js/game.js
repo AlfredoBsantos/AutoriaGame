@@ -123,7 +123,6 @@ function takeDamage(amount) {
   }
 }
 
-
 function heal(amount) {
   player.lives = Math.min(player.lives + amount, player.maxLives);
 }
@@ -233,21 +232,6 @@ function drawEnemy() {
   );
 }
 
-
-// Função para desenhar o inimigo com animação
-function drawEnemy() {
-  const frameX = enemy.frameX;
-  const frameY = enemy.frameY;
-
-  ctx.drawImage(
-    enemyImage,
-    frameX * enemy.width, frameY * enemy.height, // Define o quadro correto da animação
-    enemy.width, enemy.height, // Tamanho do inimigo
-    enemy.x, enemy.y, // Posição no canvas
-    enemy.width, enemy.height // Tamanho no canvas
-  );
-}
-
 // Função para verificar colisão entre o inimigo e o jogador
 function checkEnemyCollision() {
   const playerLeft = player.x;
@@ -322,7 +306,6 @@ function updateCamera() {
   camera.x = Math.max(0, Math.min(player.x - camera.width / 2, mapWidth - camera.width));
   camera.y = Math.max(0, Math.min(player.y - camera.height / 2, mapHeight - camera.height));
 }
-
 
 // Função para desenhar os corações de vida
 function drawLives() {
@@ -422,24 +405,70 @@ function drawEnemy() {
   );
 }
 
-const npc = {
-  x: 350, // Posição onde o NPC aparece
-  y: 37,
-  width: 16,
-  height: 32,
-  frameX: 0,
-  frameY: 0,
-  text: "Olá, aventureiro!", // Mensagem do NPC
-  visible: false, // Inicialmente invisível
-  dialogueCompleted: false, // Define se o diálogo foi concluído
-  activationArea: { // Área onde o NPC será ativado
+const npc = [
+  {
     x: 350,
-    y: 40,
-    width: 100,
-    height: 100,
+    y: 37,
+    width: 16,
+    height: 32,
+    frameX: 0,
+    frameY: 0,
+    speed: 0.5,
+    lastAnimationUpdate: 0,
+    animationSpeed: 200,
+    dialogue: [
+      { speaker: 'npc', text: "Olá, viajante! Você está perdido?" },
+      { speaker: 'player', text: "Não estou perdido, só explorando o local." },
+      { speaker: 'npc', text: "Bem, cuidado! Há perigos à frente." },
+      { speaker: 'player', text: "Obrigado pelo aviso! Vou me preparar." },
+    ],
+    dialogueIndex: 0,
+    dialogueCompleted: false,
+    visible: false,
+    activationArea: { x: 350, y: 40, width: 100, height: 100 },
   },
-};
-
+  {
+    x: 113,
+    y: 242,
+    width: 16,
+    height: 32,
+    frameX: 0,
+    frameY: 0,
+    speed: 0.5,
+    lastAnimationUpdate: 0,
+    animationSpeed: 200,
+    dialogue: [
+      { speaker: 'npc', text: "O sol está forte hoje, não acha?" },
+      { speaker: 'player', text: "Sim, vou buscar sombra logo." },
+      { speaker: 'npc', text: "Boa ideia, tome cuidado com os inimigos." },
+    ],
+    dialogueIndex: 0,
+    dialogueCompleted: false,
+    visible: false,
+    activationArea: { x: 200, y: 300, width: 100, height: 100 },
+  },
+  {
+    x: 738,
+    y: 325,
+    width: 16,
+    height: 32,
+    frameX: 0,
+    frameY: 0,
+    speed: 0.5,
+    lastAnimationUpdate: 0,
+    animationSpeed: 200,
+    dialogue: [
+      { speaker: 'npc', text: "Você já ouviu as histórias deste lugar?" },
+      { speaker: 'player', text: "Ainda não, o que há para saber?" },
+      { speaker: 'npc', text: "Dizem que há um tesouro escondido aqui perto." },
+      { speaker: 'player', text: "Interessante! Vou procurar por ele." },
+    ],
+    dialogueIndex: 0,
+    dialogueCompleted: false,
+    visible: false,
+    activationArea: { x: 500, y: 100, width: 100, height: 100 },
+  },
+];
 
 function moveNPC() {
   const currentTime = Date.now();
@@ -453,13 +482,12 @@ function moveNPC() {
   //   npc.frameX = 2; // Quadro para direção para cima
   // }
 
-  // Atualizar animação
+  // // Atualizar animação
   if (currentTime - npc.lastAnimationUpdate >= npc.animationSpeed) {
     npc.lastAnimationUpdate = currentTime;
     npc.frameX = (npc.frameX + 1) % 4; // Alterna entre os quadros
   }
 }
-
 
 // Controle da interação com o diálogo
 window.addEventListener('keydown', (e) => {
@@ -474,66 +502,134 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-function drawNPC() {
-  if (!npc.visible) return; // Se o NPC não estiver visível, não desenha
+function updateNPC() {
+  const currentTime = Date.now();
 
-  const drawX = npc.x - camera.x;
-  const drawY = npc.y - camera.y;
-
-  ctx.drawImage(
-    npcImage, // Usa a imagem carregada corretamente
-    0, 0, npc.width, npc.height,
-    drawX, drawY,
-    npc.width, npc.height
-  );
-}
-
-function handleNPCDialogue() {
-  if (!npc.visible || npc.dialogueCompleted) return;
-
-  // Desenha a caixa de diálogo
-  const dialogueBoxWidth = canvas.width * 0.8;
-  const dialogueBoxHeight = 50;
-  const dialogueBoxX = (canvas.width - dialogueBoxWidth) / 2;
-  const dialogueBoxY = canvas.height - dialogueBoxHeight - 10;
-
-  ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
-  ctx.fillRect(dialogueBoxX, dialogueBoxY, dialogueBoxWidth, dialogueBoxHeight);
-
-  ctx.fillStyle = "white";
-  ctx.font = "16px Arial";
-  ctx.textAlign = "center";
-
-  const currentDialogue = dialogue[npc.dialogueIndex];
-  const text = currentDialogue.text;
-  ctx.fillText(text, dialogueBoxX + dialogueBoxWidth / 2, dialogueBoxY + dialogueBoxHeight / 2 + 5);
-}
-
-function checkNPCActivation() {
-  if (!npc.visible && !npc.dialogueCompleted) {
-    const playerInArea =
-      player.x + player.width > npc.activationArea.x &&
-      player.x < npc.activationArea.x + npc.activationArea.width &&
-      player.y + player.height > npc.activationArea.y &&
-      player.y < npc.activationArea.y + npc.activationArea.height;
-
-    if (playerInArea) {
-      npc.visible = true; // Torna o NPC visível
+  npc.forEach((n) => {
+    // Atualizar animação
+    if (currentTime - n.lastAnimationUpdate >= n.animationSpeed) {
+      n.lastAnimationUpdate = currentTime;
+      n.frameX = (n.frameX + 1) % 4; // Alterna entre os quadros
     }
-  }
+
+    // Verificar se o jogador está na área de ativação (circular)
+    const dx = player.x - n.x;
+    const dy = player.y - n.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance <= 50) { // 50 é o raio da área de ativação
+      n.visible = true;
+    } else {
+      n.visible = false;
+    }
+  });
 }
 
 window.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && npc.visible && !npc.dialogueCompleted) {
-    npc.dialogueIndex++;
+  if (e.key === 'Enter') {
+    npc.forEach((n) => {
+      if (n.visible && !n.dialogueCompleted) {
+        const dialogue = n.dialogue[n.dialogueIndex];
+        console.log(`${dialogue.speaker}: ${dialogue.text}`);
+        n.dialogueIndex++;
 
-    if (npc.dialogueIndex >= dialogue.length) {
-      npc.dialogueCompleted = true; // Marca como concluído
-      npc.visible = false; // NPC desaparece
-    }
+        if (n.dialogueIndex >= n.dialogue.length) {
+          n.dialogueCompleted = true; // Marca como concluído
+        }
+      }
+    });
   }
 });
 
+
+function drawNPC() {
+  npc.forEach((n) => {
+    ctx.drawImage(
+      npcImage,
+      n.frameX * n.width,
+      n.frameY * n.height,
+      n.width,
+      n.height,
+      n.x - camera.x,
+      n.y - camera.y,
+      n.width,
+      n.height
+    );
+
+    // Desenhar área de ativação (opcional, para debug)
+    if (n.visible) {
+      ctx.beginPath();
+      ctx.arc(n.x - camera.x, n.y - camera.y, 50, 0, Math.PI * 2); // Raio 50
+      ctx.strokeStyle = "rgba(255, 0, 0, 0.5)";
+      ctx.stroke();
+    }
+  });
+}
+
+function handleNPCDialogue() {
+  npc.forEach((npc) => {
+    if (npc.visible && !npc.dialogueCompleted) {
+      const dialogueBoxWidth = canvas.width * 0.8;
+      const dialogueBoxHeight = 50;
+      const dialogueBoxX = (canvas.width - dialogueBoxWidth) / 2;
+      const dialogueBoxY = canvas.height - dialogueBoxHeight - 10;
+
+      ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+      ctx.fillRect(dialogueBoxX, dialogueBoxY, dialogueBoxWidth, dialogueBoxHeight);
+
+      ctx.fillStyle = "white";
+      ctx.font = "16px Arial";
+      ctx.textAlign = "center";
+
+      const currentDialogue = npc.dialogue[npc.dialogueIndex];
+      const text = currentDialogue.text;
+      ctx.fillText(text, dialogueBoxX + dialogueBoxWidth / 2, dialogueBoxY + dialogueBoxHeight / 2 + 5);
+    }
+  });
+}
+
+function checkNPCActivation() {
+  npc.forEach((npc) => {
+    if (!npc.visible && !npc.dialogueCompleted) {
+      const playerInArea =
+        player.x + player.width > npc.activationArea.x &&
+        player.x < npc.activationArea.x + npc.activationArea.width &&
+        player.y + player.height > npc.activationArea.y &&
+        player.y < npc.activationArea.y + npc.activationArea.height;
+
+      if (playerInArea) {
+        npc.visible = true;
+      }
+    }
+  });
+}
+
+function updateNPCAnimation(npc) {
+  const currentTime = Date.now();
+  if (currentTime - npc.lastAnimationUpdate >= 200) { // Velocidade da animação (200ms por frame)
+    npc.lastAnimationUpdate = currentTime;
+    npc.frameX = (npc.frameX + 1) % 4; // Cicla pelos frames horizontais (ajuste se tiver mais ou menos frames)
+  }
+}
+
+function updateAllNPCs() {
+  npc.forEach(updateNPCAnimation);
+}
+
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    npc.forEach((npc) => {
+      if (npc.visible && !npc.dialogueCompleted) {
+        npc.dialogueIndex++;
+
+        if (npc.dialogueIndex >= npc.dialogue.length) {
+          npc.dialogueCompleted = true;
+          npc.visible = false;
+        }
+      }
+    });
+  }
+});
 
 // Diálogo do NPC e do personagem
 const dialogue = [
@@ -568,6 +664,7 @@ function gameLoop() {
   movePlayer(); // Movimenta o jogador
   updateAnimation(); // Atualiza a animação do jogador
   drawPlayer(); // Desenha o jogador
+
   checkNPCActivation(); // Ativa o NPC se o jogador estiver na área
   handleNPCDialogue(); // Gerencia o diálogo com o NPC
   drawNPC(); // Desenha o NPC se estiver visível
@@ -576,6 +673,9 @@ function gameLoop() {
   updatePlayerState(); // Atualiza o estado do jogador (invulnerabilidade)
   checkEnemyCollision(); // Verifica colisão com o inimigo (se permitido)
   drawLives(); // Desenha as vidas
+  updateNPC(); // Atualiza NPC
+  updateAllNPCs(); // Atualiza a animação dos NPCs
+  drawNPC(); // Desenha NPC
 
   requestAnimationFrame(gameLoop); // Chama o loop novamente
 }
