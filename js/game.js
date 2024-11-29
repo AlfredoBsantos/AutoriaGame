@@ -425,7 +425,7 @@ const npc = [
     dialogueIndex: 0,
     dialogueCompleted: false,
     visible: false,
-    activationArea: { x: 350, y: 40, width: 100, height: 100 },
+    activationArea: { x: 350, y: 37, width: 50, height: 50 },
   },
   {
     x: 113,
@@ -445,7 +445,7 @@ const npc = [
     dialogueIndex: 0,
     dialogueCompleted: false,
     visible: false,
-    activationArea: { x: 200, y: 300, width: 100, height: 100 },
+    activationArea: { x: 113, y: 242, width: 50, height: 50 },
   },
   {
     x: 738,
@@ -466,7 +466,7 @@ const npc = [
     dialogueIndex: 0,
     dialogueCompleted: false,
     visible: false,
-    activationArea: { x: 500, y: 100, width: 100, height: 100 },
+    activationArea: { x: 738, y: 325, width: 50, height: 50 },
   },
 ];
 
@@ -491,7 +491,7 @@ function moveNPC() {
 
 // Controle da interação com o diálogo
 window.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && npc.isVisible && !npc.dialogueCompleted) {
+  if ((e.key === 'q' || e.key === 'Q') && npc.isVisible && !npc.dialogueCompleted) {
     npc.dialogueIndex++;
 
     // Verifica se o diálogo foi concluído
@@ -526,7 +526,7 @@ function updateNPC() {
 }
 
 window.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
+  if (e.key === 'q' || e.key === 'Q') {
     npc.forEach((n) => {
       if (n.visible && !n.dialogueCompleted) {
         const dialogue = n.dialogue[n.dialogueIndex];
@@ -617,7 +617,7 @@ function updateAllNPCs() {
 }
 
 window.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
+  if (e.key === 'q' || e.key === 'Q') {
     npc.forEach((npc) => {
       if (npc.visible && !npc.dialogueCompleted) {
         npc.dialogueIndex++;
