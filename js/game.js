@@ -1,3 +1,6 @@
+const startScreen = document.getElementById("start-screen");
+const startButton = document.getElementById("start-button");
+const gameContainer = document.getElementById("game-container");
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -30,6 +33,33 @@ npcImage.src = './img/NPC_test.png';
 // Ajustar o tamanho do canvas com base no mapa
 const mapWidth = mapData ? mapData.width * tileSize : 0;
 const mapHeight = mapData ? mapData.height * tileSize : 0;
+
+// Configura o evento para iniciar o jogo
+startButton.addEventListener("click", () => {
+  // Esconde a tela inicial
+  startScreen.style.display = "none";
+
+  // Exibe o canvas do jogo
+  gameCanvas.style.display = "block";
+
+  // Inicialize o jogo
+  startGame();
+});
+
+function startGame() {
+  // Aqui entra a lógica principal do seu jogo
+  const ctx = gameCanvas.getContext("2d");
+  ctx.fillStyle = "green";
+  ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+
+  // Exemplo de texto no canvas
+  ctx.fillStyle = "white";
+  ctx.font = "20px Arial";
+  ctx.fillText("O jogo começou!", 150, 175);
+
+  gameLoop();
+}
+
 
 // Configuração do personagem
 const player = {
@@ -672,9 +702,24 @@ function tocarMusicaFundo() {
 document.body.addEventListener('click', () => {
     tocarMusicaFundo();
 });
-function gameLoop() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpa o canvas
 
+let lastFrameTime = 0; // Armazena o tempo do último frame
+const targetFPS = 75; // Define o FPS alvo
+const frameDuration = 1000 / targetFPS; // Duração de cada frame em milissegundos
+
+function gameLoop(currentTime) {
+  // Calcula o tempo desde o último frame
+  const deltaTime = currentTime - lastFrameTime;
+
+  // Se ainda não passou tempo suficiente, espera
+  if (deltaTime < frameDuration) {
+    requestAnimationFrame(gameLoop);
+    return;
+  }
+
+  lastFrameTime = currentTime;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpa o canvas
   if (isGameOver) {
     // Exibe a tela de Game Over
     drawGameOverImage();
@@ -682,25 +727,28 @@ function gameLoop() {
   }
 
   // Atualizações normais do jogo
-  updateCamera(); // Atualiza a câmera
+  updateCamera(deltaTime); // Atualiza a câmera
   drawMap(); // Desenha o mapa
-  movePlayer(); // Movimenta o jogador
-  updateAnimation(); // Atualiza a animação do jogador
+  movePlayer(deltaTime); // Movimenta o jogador proporcional ao tempo
+  updateAnimation(deltaTime); // Atualiza a animação do jogador proporcional ao tempo
   drawPlayer(); // Desenha o jogador
 
   checkNPCActivation(); // Ativa o NPC se o jogador estiver na área
   handleNPCDialogue(); // Gerencia o diálogo com o NPC
   drawNPC(); // Desenha o NPC se estiver visível
-  moveEnemy(); // Movimenta o inimigo (se permitido)
+  moveEnemy(deltaTime); // Movimenta o inimigo proporcional ao tempo
   drawEnemy(); // Desenha o inimigo (se permitido)
   updatePlayerState(); // Atualiza o estado do jogador (invulnerabilidade)
   checkEnemyCollision(); // Verifica colisão com o inimigo (se permitido)
   drawLives(); // Desenha as vidas
-  updateNPC(); // Atualiza NPC
-  updateAllNPCs(); // Atualiza a animação dos NPCs
+  updateNPC(deltaTime); // Atualiza NPC proporcional ao tempo
+  updateAllNPCs(deltaTime); // Atualiza a animação dos NPCs proporcional ao tempo
   drawNPC(); // Desenha NPC
 
   requestAnimationFrame(gameLoop); // Chama o loop novamente
 }
+
+// Listener para o botão "Começar Jogo"
+startButton.addEventListener("click", startGame);
 // Iniciar o jogo
 gameLoop();
