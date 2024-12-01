@@ -26,6 +26,9 @@ heartImage.src = './img/Heart.png'; // Caminho para a imagem do coração
 const enemyImage = new Image();
 enemyImage.src = './img/log.png'; // Caminho para a imagem do inimigo (log.png)
 
+const explosionSprite = new Image();
+explosionSprite.src = './img/explosion.png';
+
 // Carregar a imagem do NPC
 const npcImage = new Image()
 npcImage.src = './img/NPC_test.png';
@@ -87,17 +90,23 @@ const player = {
 
 // Definir as propriedades do inimigo
 const enemy = {
-  x: 230, // Posição inicial X
-  y: 460, // Posição inicial Y
-  width: 32, // Largura do inimigo
-  height: 32, // Altura do inimigo
-  frameX: 0, // Frame X inicial
-  frameY: 0, // Frame Y inicial (direção do inimigo)
-  speed: 0.5, // Velocidade do inimigo
-  isMoving: true, // Define se o inimigo está se movendo
-  animationSpeed: 200, // Velocidade da animação do inimigo
-  lastAnimationUpdate: 0, // Marcação de tempo da última atualização da animação
+        x: 200,
+        y: 400,
+        width: 32,
+        height: 32,
+        frameX: 0,
+        frameY: 0,
+        speed: 0.5,
+        isMoving: true,
+        animationSpeed: 200,
+        lastAnimationUpdate: 0,
+        life: 100,
+        isAlive: true,
+        isExploding: false,
+        explosionStartTime: null,
 };
+
+const enemies = enemy;
 
 // Capturar as teclas pressionadas
 const keys = {};
@@ -212,57 +221,168 @@ function updateAnimation() {
   }
 }
 
-// Função para mover o inimigo (somente se o diálogo do NPC estiver concluído)
+// Ajustar função de movimentação do inimigo
 function moveEnemy() {
-  if (!allDialoguesCompleted()) {
-    return; // Não mover o inimigo se os diálogos não forem concluídos
+  if (!npc[0].dialogueCompleted && enemy.isAlive) return; // Certifique-se de que o diálogo do NPC foi concluído
+
+  const dx = player.x - enemy.x;
+  const dy = player.y - enemy.y;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+
+  if (distance > 30) { // O inimigo se move até ficar a 50px do jogador
+    const directionX = dx / distance;
+    const directionY = dy / distance;
+
+    enemy.x += directionX * enemy.speed;
+    enemy.y += directionY * enemy.speed;
+
+    // Atualizar animação do inimigo
+    const currentTime = Date.now();
+    if (currentTime - enemy.lastAnimationUpdate >= enemy.animationSpeed) {
+      enemy.lastAnimationUpdate = currentTime;
+      enemy.frameX = (enemy.frameX + 1) % 3; // Alterna quadros
+    }
+  } else{
+    // O inimigo ataca se estiver dentro de 50px
+    enemyAttack();
   }
+}
 
-  if (enemy.isMoving) {
-    const dx = player.x - enemy.x;
-    const dy = player.y - enemy.y;
+function calculateDistance(x1, y1, x2, y2) {
+    return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+}
 
-    const distance = Math.sqrt(dx * dx + dy * dy);
+function isWithinAttackRange(player, enemy, range) {
+    const distance = calculateDistance(player.x + player.width / 2, player.y + player.height / 2,
+                                       enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
+    return distance <= range;
+}
 
-    if (distance > 1) {
-      const directionX = dx / distance;
-      const directionY = dy / distance;
+function attackEnemy(player, enemy) {
+    const attackRange = 200;
+    const distance = calculateDistance(
+        player.x + player.width / 2,
+        player.y + player.height / 2,
+        enemy.x + enemy.width / 2,
+        enemy.y + enemy.height / 2
+    );
 
-      if (Math.abs(directionX) > Math.abs(directionY)) {
-        enemy.x += directionX * enemy.speed;
-        enemy.frameY = directionX > 0 ? 2 : 3; // Direção horizontal
-      } else {
-        enemy.y += directionY * enemy.speed;
-        enemy.frameY = directionY > 0 ? 0 : 1; // Direção vertical
-      }
+    if (distance <= attackRange && enemy.isAlive) {
+        enemy.life -= 50;
+        console.log(`Inimigo atingido! Vida restante: ${enemy.life}`);
 
-      const currentTime = Date.now();
-      if (currentTime - enemy.lastAnimationUpdate >= enemy.animationSpeed) {
-        enemy.lastAnimationUpdate = currentTime;
-        enemy.frameX = (enemy.frameX + 1) % 4;
-      }
+        if (enemy.life <= 0) {
+            enemy.isAlive = false;
+            enemy.isExploding = true;
+            enemy.explosionStartTime = performance.now(); // Marca o início da explosão
+            console.log('Inimigo derrotado! Iniciando explosão.');
+        }
+    }
+}
+
+function onPlayerAttack(player, enemy) {
+    if (player.isAttacking) {
+        attackEnemy(player, enemy);
+    }
+}
+
+
+function drawEnemy() {
+  if (!npc.dialogueCompleted && enemy.isAlive) {
+    // Desenha o inimigo normalmente
+    const frameX = enemy.frameX;
+    const frameY = enemy.frameY;
+
+    const drawX = enemy.x - camera.x;
+    const drawY = enemy.y - camera.y;
+
+    ctx.drawImage(
+      enemyImage,
+      frameX * enemy.width, frameY * enemy.height,
+      enemy.width, enemy.height,
+      drawX, drawY,
+      enemy.width, enemy.height
+    );
+  } else if (enemy.isExploding) {
+    // Tempo de explosão (em milissegundos)
+    const explosionDuration = 1000;  // Duração total da animação de explosão em milissegundos
+    const frameDuration = explosionDuration / 12; // Tempo por frame (12 frames no total)
+    const elapsedTime = performance.now() - enemy.explosionStartTime;
+    const frameIndex = Math.floor(elapsedTime / frameDuration); // Determina o frame atual com base no tempo
+
+    if (elapsedTime < explosionDuration) {
+      const columns = 4; // 4 colunas na sprite sheet
+      const rows = 3;    // 3 linhas na sprite sheet
+      const frameX = frameIndex % columns;   // Determina a posição X do frame
+      const frameY = Math.floor(frameIndex / columns); // Determina a posição Y do frame
+
+      // Cada frame é 180x180 px
+      const frameWidth = 180;
+      const frameHeight = 180;
+
+      // Desenha a explosão
+      ctx.drawImage(
+        explosionSprite, 
+        frameX * frameWidth, frameY * frameHeight, // Posição do frame na sprite sheet
+        frameWidth, frameHeight,                  // Tamanho do frame
+        enemy.x - camera.x, enemy.y - camera.y,    // Posição do inimigo na tela
+        enemy.width, enemy.height                 // Tamanho do desenho no canvas
+      );
+    } else {
+      // Finaliza a explosão
+      enemy.isExploding = false;
+      console.log('Explosão concluída.');
     }
   }
 }
 
 
-// Função para desenhar o inimigo (somente se o diálogo do NPC estiver concluído)
-function drawEnemy() {
-  if (!npc.dialogueCompleted) return; // Só desenha se o diálogo estiver concluído
+function updateEnemies(enemies) {
+    for (let i = enemies.length - 1; i >= 0; i--) {
+        const enemy = enemies[i];
 
-  const frameX = enemy.frameX;
-  const frameY = enemy.frameY;
+        // Remove inimigos cuja explosão foi concluída
+        if (!enemy.isAlive && !enemy.isExploding) {
+            enemies.splice(i, 1); // Remove o inimigo da lista
+            console.log('Inimigo removido do jogo.');
+        }
+    }
+}
 
-  const drawX = enemy.x - camera.x;
-  const drawY = enemy.y - camera.y;
 
-  ctx.drawImage(
-    enemyImage,
-    frameX * enemy.width, frameY * enemy.height,
-    enemy.width, enemy.height,
-    drawX, drawY,
-    enemy.width, enemy.height
-  );
+
+// Função de ataque do inimigo
+function enemyAttack() {
+  const currentTime = Date.now();
+  if (currentTime - enemy.lastAnimationUpdate >= 1000 && enemy.isAlive) { // Intervalo de ataque a cada 1s
+    takeDamage(1); // Jogador perde 1 de vida (ajuste conforme necessário)
+    console.log("O inimigo atacou!");
+    enemy.lastAnimationUpdate = currentTime;
+  }
+}
+
+// Atualizar detecção de ataque do jogador
+function checkPlayerAttack() {
+  if (player.isAttacking) {
+    const playerCenterX = player.x + player.width / 2;
+    const playerCenterY = player.y + player.height / 2;
+
+    const enemyCenterX = enemy.x + enemy.width / 2;
+    const enemyCenterY = enemy.y + enemy.height / 2;
+
+    const distance = Math.sqrt(
+      Math.pow(playerCenterX - enemyCenterX, 2) +
+      Math.pow(playerCenterY - enemyCenterY, 2)
+    );
+
+    if (distance < 200) { // Alcance do ataque
+      enemy.vidas -= 50; // Reduz vida do inimigo
+      console.log("Ataque bem-sucedido no inimigo!");
+      if (enemy.vidas <= 0) {
+        console.log("Inimigo derrotado!");
+      }
+    }
+  }
 }
 
 // Função para verificar diálogos completos
@@ -284,9 +404,12 @@ function checkEnemyCollision() {
   const enemyBottom = enemy.y + enemy.height;
 
   // Verifica se há colisão
-  if (playerRight > enemyLeft && playerLeft < enemyRight && playerBottom > enemyTop && playerTop < enemyBottom) {
+
+ 
+  if (playerRight > enemyLeft && playerLeft < enemyRight && playerBottom > enemyTop && playerTop < enemyBottom && enemy.isAlive) {
     takeDamage(1); // Chama a função de dano (reduz a vida do jogador)
-  }
+  
+}
 }
 
 // Função para mover o jogador
@@ -428,21 +551,7 @@ function drawPlayer() {
   }
 }
 
-function drawEnemy() {
-  const frameX = enemy.frameX;
-  const frameY = enemy.frameY;
 
-  const drawX = enemy.x - camera.x;
-  const drawY = enemy.y - camera.y;
-
-  ctx.drawImage(
-    enemyImage,
-    frameX * enemy.width, frameY * enemy.height,
-    enemy.width, enemy.height,
-    drawX, drawY,
-    enemy.width, enemy.height
-  );
-}
 
 const npc = [
   {
@@ -738,12 +847,23 @@ function gameLoop(currentTime) {
   drawNPC(); // Desenha o NPC se estiver visível
   moveEnemy(deltaTime); // Movimenta o inimigo proporcional ao tempo
   drawEnemy(); // Desenha o inimigo (se permitido)
+    updateEnemies(enemies);  // Atualiza a lista de inimigos
+
+    
+
   updatePlayerState(); // Atualiza o estado do jogador (invulnerabilidade)
   checkEnemyCollision(); // Verifica colisão com o inimigo (se permitido)
   drawLives(); // Desenha as vidas
   updateNPC(deltaTime); // Atualiza NPC proporcional ao tempo
   updateAllNPCs(deltaTime); // Atualiza a animação dos NPCs proporcional ao tempo
   drawNPC(); // Desenha NPC
+
+     onPlayerAttack(player, enemy);
+
+    // Atualizações no jogo...
+    if (!enemy.isAlive) {
+        // Lógica para remover o inimigo ou exibir sua morte
+    }
 
   requestAnimationFrame(gameLoop); // Chama o loop novamente
 }
