@@ -255,7 +255,7 @@ function moveEnemy() {
   const dy = player.y - enemy.y;
   const distance = Math.sqrt(dx * dx + dy * dy);
 
-  if (distance > 30) { // O inimigo se move até ficar a 50px do jogador
+  if (distance > 10) { // O inimigo se move até ficar a 50px do jogador
     const directionX = dx / distance;
     const directionY = dy / distance;
 
@@ -270,7 +270,7 @@ function moveEnemy() {
     }
   } else{
     // O inimigo ataca se estiver dentro de 50px
-    enemyAttack();
+    enemyAttack(0);
   }
 }
 
@@ -285,7 +285,7 @@ function isWithinAttackRange(player, enemy, range) {
 }
 
 function attackEnemy(player, enemy) {
-  const attackRange = 200;  // A distância do ataque do jogador
+  const attackRange = 40;  // A distância do ataque do jogador
   const distance = calculateDistance(
       player.x + player.width / 2,
       player.y + player.height / 2,
@@ -406,17 +406,25 @@ function showVictoryImage() {
   }
 }
 
-
 // Função de ataque do inimigo
 function enemyAttack() {
-  const currentTime = Date.now();
-  if (currentTime - enemy.lastAnimationUpdate >= 1000 && enemy.isAlive) { // Intervalo de ataque a cada 1s
-    takeDamage(1); // Jogador perde 1 de vida (ajuste conforme necessário)
-    console.log("O inimigo atacou!");
-    enemy.lastAnimationUpdate = currentTime;
+  const attackRange = 20; // Novo alcance de ataque reduzido
+  const distance = calculateDistance(
+      player.x + player.width / 2,
+      player.y + player.height / 2,
+      enemy.x + enemy.width / 2,
+      enemy.y + enemy.height / 2
+  );
+
+  if (distance <= attackRange && enemy.isAlive) {
+    const currentTime = Date.now();
+    if (currentTime - enemy.lastAnimationUpdate >= 1000) { // Intervalo de ataque a cada 1s
+      takeDamage(1); // Jogador perde 1 de vida
+      console.log("O inimigo atacou!");
+      enemy.lastAnimationUpdate = currentTime;
+    }
   }
 }
-
 // Atualizar detecção de ataque do jogador
 function checkPlayerAttack() {
   if (player.isAttacking) {
@@ -445,7 +453,6 @@ function checkPlayerAttack() {
 function allDialoguesCompleted() {
   return npc.every((n) => n.dialogueCompleted);
 }
-
 
 // Função para verificar colisão entre o inimigo e o jogador
 function checkEnemyCollision() {
@@ -538,7 +545,6 @@ function drawLives() {
   }
 }
 
-
 // Função para desenhar o mapa
 function drawMap() {
   if (!mapData || !mapData.layers) {
@@ -577,7 +583,6 @@ function drawMap() {
   });
 }
 
-
 // Função para desenhar o personagem
 function drawPlayer() {
   let frameX = player.frameX;
@@ -607,8 +612,6 @@ function drawPlayer() {
   }
 }
 
-
-
 const npc = [
   {
     x: 350,
@@ -621,6 +624,7 @@ const npc = [
     lastAnimationUpdate: 0,
     animationSpeed: 200,
     dialogue: [
+      { speaker: 'player', text: " " },
       { speaker: 'npc', text: "Olá, viajante! Você está perdido?" },
       { speaker: 'player', text: "Não estou perdido, só explorando o local." },
       { speaker: 'npc', text: "Bem, cuidado! Há perigos à frente." },
@@ -643,6 +647,7 @@ const npc = [
     lastAnimationUpdate: 0,
     animationSpeed: 200,
     dialogue: [
+      { speaker: 'player', text: " " },
       { speaker: 'npc', text: "O sol está forte hoje, não acha?" },
       { speaker: 'player', text: "Sim, vou buscar sombra logo." },
       { speaker: 'npc', text: "Boa ideia, tome cuidado com os inimigos." },
@@ -664,6 +669,7 @@ const npc = [
     lastAnimationUpdate: 0,
     animationSpeed: 200,
     dialogue: [
+      { speaker: 'player', text: " " },
       { speaker: 'npc', text: "Você já ouviu as histórias deste lugar?" },
       { speaker: 'player', text: "Ainda não, o que há para saber?" },
       { speaker: 'npc', text: "Dizem que há um tesouro escondido aqui perto." },
@@ -679,15 +685,6 @@ const npc = [
 
 function moveNPC() {
   const currentTime = Date.now();
-
-  // Movimento simples: Alterna direção a cada 2 segundos
-  // if (currentTime % 2000 < 1000) {
-  //   npc.x += npc.speed; // Move para baixo
-  //   npc.frameX = 0; // Quadro para direção para baixo
-  // } else {
-  //   npc.x -= npc.speed; // Move para cima
-  //   npc.frameX = 2; // Quadro para direção para cima
-  // }
 
   // // Atualizar animação
   if (currentTime - npc.lastAnimationUpdate >= npc.animationSpeed) {
@@ -739,23 +736,6 @@ function updateNPC() {
     }
   });
 }
-
-// window.addEventListener('keydown', (e) => {
-//   if (e.key === 'Enter') {
-//     npc.forEach((n) => {
-//       if (n.visible && !n.dialogueCompleted) {
-//         const dialogue = n.dialogue[n.dialogueIndex];
-//         console.log(`${dialogue.speaker}: ${dialogue.text}`);
-//         n.dialogueIndex++;
-
-//         if (n.dialogueIndex >= n.dialogue.length) {
-//           n.dialogueCompleted = true; // Marca como concluído
-//         }
-//       }
-//     });
-//   }
-// });
-
 
 function drawNPC() {
   npc.forEach((n) => {
@@ -840,32 +820,6 @@ function updateAllNPCs() {
   npc.forEach(updateNPCAnimation);
 }
 
-// window.addEventListener('keydown', (e) => {
-//   if (e.key === 'Enter') {
-//     npc.forEach((npc) => {
-//       if (npc.visible && !npc.dialogueCompleted) {
-//         npc.dialogueIndex++;
-
-//         if (npc.dialogueIndex >= npc.dialogue.length) {
-//           npc.dialogueCompleted = true;
-//           npc.visible = false;
-//         }
-//       }
-//     });
-//   }
-// });
-
-// Diálogo do NPC e do personagem
-const dialogue = [
-  { speaker: 'npc', text: "Olá, viajante! Você está perdido?" },
-  { speaker: 'player', text: "Não estou perdido, só explorando o local." },
-  { speaker: 'npc', text: "Bem, cuidado! Há perigos à frente." },
-  { speaker: 'player', text: "Obrigado pelo aviso! Vou me preparar." },
-];
-
-npc.dialogueIndex = 0; // Índice para controlar o diálogo
-npc.dialogueCompleted = false; // Controle de diálogo finalizado
-
 window.addEventListener('keydown', (e) => {
   if ((e.key === 'r' || e.key === 'R') && isGameOver) {
     resetGame(); // Chama a função para reiniciar o jogo
@@ -873,7 +827,6 @@ window.addEventListener('keydown', (e) => {
 });
 
 // Musica 
-
 const musicaFundo = new Audio('musicas/musica1.mp3'); // bota a tua msc aq
 musicaFundo.loop = true;
 musicaFundo.volume = 1;
