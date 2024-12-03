@@ -630,6 +630,7 @@ const npc = [
     dialogueCompleted: false,
     visible: false,
     activationArea: { x: 350, y: 40, width: 100, height: 100 },
+    dialogueStarted: false,
   },
   {
     x: 113,
@@ -650,6 +651,7 @@ const npc = [
     dialogueCompleted: false,
     visible: false,
     activationArea: { x: 200, y: 300, width: 100, height: 100 },
+    dialogueStarted: false,
   },
   {
     x: 738,
@@ -671,6 +673,7 @@ const npc = [
     dialogueCompleted: false,
     visible: false,
     activationArea: { x: 500, y: 100, width: 100, height: 100 },
+    dialogueStarted: false,
   },
 ];
 
@@ -694,17 +697,25 @@ function moveNPC() {
 }
 
 // Controle da interação com o diálogo
-window.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && npc.isVisible && !npc.dialogueCompleted) {
-    npc.dialogueIndex++;
+window.addEventListener('keydown', (e) => {  
+  npc.forEach((npc) => {  
+    if (npc.visible && (e.key === 'q' || e.key === 'Q') && !npc.dialogueStarted) {  
+      npc.dialogueStarted = true;  
+      npc.dialogueIndex = 0;  
+    }  
+    
+    // Avançar diálogo com q  
+    if (npc.visible && npc.dialogueStarted && (e.key === 'q' || e.key === 'Q') && !npc.dialogueCompleted) {  
+      npc.dialogueIndex++;  
 
-    // Verifica se o diálogo foi concluído
-    if (npc.dialogueIndex >= dialogue.length) {
-      npc.dialogueCompleted = true; // Marcar como concluído
-      npc.isVisible = false; // NPC desaparece
-    }
-  }
-});
+      if (npc.dialogueIndex >= npc.dialogue.length) {  
+        npc.dialogueCompleted = true;  
+        npc.dialogueStarted = false;  
+        npc.visible = false;  
+      }  
+    }  
+  });  
+});  
 
 function updateNPC() {
   const currentTime = Date.now();
@@ -729,21 +740,21 @@ function updateNPC() {
   });
 }
 
-window.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    npc.forEach((n) => {
-      if (n.visible && !n.dialogueCompleted) {
-        const dialogue = n.dialogue[n.dialogueIndex];
-        console.log(`${dialogue.speaker}: ${dialogue.text}`);
-        n.dialogueIndex++;
+// window.addEventListener('keydown', (e) => {
+//   if (e.key === 'Enter') {
+//     npc.forEach((n) => {
+//       if (n.visible && !n.dialogueCompleted) {
+//         const dialogue = n.dialogue[n.dialogueIndex];
+//         console.log(`${dialogue.speaker}: ${dialogue.text}`);
+//         n.dialogueIndex++;
 
-        if (n.dialogueIndex >= n.dialogue.length) {
-          n.dialogueCompleted = true; // Marca como concluído
-        }
-      }
-    });
-  }
-});
+//         if (n.dialogueIndex >= n.dialogue.length) {
+//           n.dialogueCompleted = true; // Marca como concluído
+//         }
+//       }
+//     });
+//   }
+// });
 
 
 function drawNPC() {
@@ -770,43 +781,52 @@ function drawNPC() {
   });
 }
 
-function handleNPCDialogue() {
-  npc.forEach((npc) => {
-    if (npc.visible && !npc.dialogueCompleted) {
-      const dialogueBoxWidth = canvas.width * 0.8;
-      const dialogueBoxHeight = 50;
-      const dialogueBoxX = (canvas.width - dialogueBoxWidth) / 2;
-      const dialogueBoxY = canvas.height - dialogueBoxHeight - 10;
+function handleNPCDialogue() {  
+  npc.forEach((npc) => {  
+    if (npc.visible && !npc.dialogueCompleted && npc.dialogueStarted) {  
+      const dialogueBoxWidth = canvas.width * 0.8;  
+      const dialogueBoxHeight = 100; // Aumentei a altura para mostrar tanto NPC quanto Player  
+      const dialogueBoxX = (canvas.width - dialogueBoxWidth) / 2;  
+      const dialogueBoxY = canvas.height - dialogueBoxHeight - 10;  
 
-      ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
-      ctx.fillRect(dialogueBoxX, dialogueBoxY, dialogueBoxWidth, dialogueBoxHeight);
+      // Fundo da caixa de diálogo  
+      ctx.fillStyle = "rgba(0, 0, 0, 0.8)";  
+      ctx.fillRect(dialogueBoxX, dialogueBoxY, dialogueBoxWidth, dialogueBoxHeight);  
 
-      ctx.fillStyle = "white";
-      ctx.font = "16px Arial";
-      ctx.textAlign = "center";
+      ctx.fillStyle = "white";  
+      ctx.font = "16px Arial";  
+      ctx.textAlign = "left";  
 
-      const currentDialogue = npc.dialogue[npc.dialogueIndex];
-      const text = currentDialogue.text;
-      ctx.fillText(text, dialogueBoxX + dialogueBoxWidth / 2, dialogueBoxY + dialogueBoxHeight / 2 + 5);
-    }
-  });
-}
+      const currentDialogue = npc.dialogue[npc.dialogueIndex];  
+      
+      // Mostrar nome do speaker  
+      ctx.fillStyle = currentDialogue.speaker === 'npc' ? 'yellow' : 'lightblue';  
+      ctx.fillText(currentDialogue.speaker.toUpperCase(), dialogueBoxX + 10, dialogueBoxY + 25);  
+      
+      // Mostrar texto do diálogo  
+      ctx.fillStyle = "white";  
+      ctx.fillText(currentDialogue.text, dialogueBoxX + 10, dialogueBoxY + 50);  
+    }  
+  });  
+}  
 
-function checkNPCActivation() {
-  npc.forEach((npc) => {
-    if (!npc.visible && !npc.dialogueCompleted) {
-      const playerInArea =
-        player.x + player.width > npc.activationArea.x &&
-        player.x < npc.activationArea.x + npc.activationArea.width &&
-        player.y + player.height > npc.activationArea.y &&
-        player.y < npc.activationArea.y + npc.activationArea.height;
+function checkNPCActivation() {  
+  npc.forEach((npc) => {  
+    if (!npc.visible && !npc.dialogueCompleted) {  
+      const playerInArea =  
+        player.x + player.width > npc.activationArea.x &&  
+        player.x < npc.activationArea.x + npc.activationArea.width &&  
+        player.y + player.height > npc.activationArea.y &&  
+        player.y < npc.activationArea.y + npc.activationArea.height;  
 
-      if (playerInArea) {
-        npc.visible = true;
-      }
-    }
-  });
-}
+      if (playerInArea) {  
+        npc.visible = true;  
+        // Adicionar mensagem de instrução  
+        console.log("Pressione 'q' para iniciar o diálogo com o NPC");  
+      }  
+    }  
+  });  
+}  
 
 function updateNPCAnimation(npc) {
   const currentTime = Date.now();
@@ -820,20 +840,20 @@ function updateAllNPCs() {
   npc.forEach(updateNPCAnimation);
 }
 
-window.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    npc.forEach((npc) => {
-      if (npc.visible && !npc.dialogueCompleted) {
-        npc.dialogueIndex++;
+// window.addEventListener('keydown', (e) => {
+//   if (e.key === 'Enter') {
+//     npc.forEach((npc) => {
+//       if (npc.visible && !npc.dialogueCompleted) {
+//         npc.dialogueIndex++;
 
-        if (npc.dialogueIndex >= npc.dialogue.length) {
-          npc.dialogueCompleted = true;
-          npc.visible = false;
-        }
-      }
-    });
-  }
-});
+//         if (npc.dialogueIndex >= npc.dialogue.length) {
+//           npc.dialogueCompleted = true;
+//           npc.visible = false;
+//         }
+//       }
+//     });
+//   }
+// });
 
 // Diálogo do NPC e do personagem
 const dialogue = [
