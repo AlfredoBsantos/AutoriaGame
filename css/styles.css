@@ -18,6 +18,15 @@
   z-index: 1000; /* Garante que a tela de início fique acima do conteúdo do jogo */
 }
 
+button {
+  background-color: #e0f878;
+  color: #000;
+  font-family: 'Press Start 2P', cursive;
+  -webkit-text-stroke-width: 0.5px;
+  -webkit-text-stroke-color: #000;
+  border-radius: 10px;
+}
+
 #imagemFundo {
   border: 5px solid #e0f878;
 }

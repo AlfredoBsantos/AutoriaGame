@@ -12,6 +12,10 @@ const tileSize = 16; // Tamanho do tile (16x16)
 const tilesetImage = new Image();
 tilesetImage.src = './img/Overworld.png'; // O nome correto do tileset
 
+// Carregar a imagem de vitória
+const victoryImage = new Image();
+victoryImage.src = './img/v.png'; // Caminho para a sua imagem de vitória
+
 // Carregar a imagem de game over
 const gameOverImage = new Image();
 gameOverImage.src = './img/gameover.png'; // Caminho para a imagem de game over
@@ -90,23 +94,45 @@ const player = {
 
 // Definir as propriedades do inimigo
 const enemy = {
-        x: 200,
-        y: 400,
-        width: 32,
-        height: 32,
-        frameX: 0,
-        frameY: 0,
-        speed: 0.5,
-        isMoving: true,
-        animationSpeed: 200,
-        lastAnimationUpdate: 0,
-        life: 100,
-        isAlive: true,
-        isExploding: false,
-        explosionStartTime: null,
+  x: 200,
+  y: 400,
+  width: 32,
+  height: 32,
+  frameX: 0,
+  frameY: 0,
+  speed: 0.5,
+  isMoving: true,
+  animationSpeed: 200,
+  lastAnimationUpdate: 0,
+  life: 100,
+  isAlive: true,
+  isExploding: false,
+  explosionStartTime: null,
+  deathCount: 0, // Contador de mortes e renascimentos
 };
 
 const enemies = enemy;
+
+
+let defeatedEnemies = 0;  // Variável para contar inimigos derrotados
+const totalEnemies = 3;   // Total de inimigos no jogo
+
+// Função para reiniciar o inimigo
+function respawnEnemy() {
+  if (enemy.deathCount < 2) {  // Limita a 2 renascimentos
+    // Reinicia a posição do inimigo, vida e estado
+    enemy.x = 200 + Math.random() * 200; // Nova posição aleatória
+    enemy.y = 400 + Math.random() * 200; // Nova posição aleatória
+    enemy.life = 100;  // Vida total
+    enemy.isAlive = true;
+    enemy.isExploding = false;
+    enemy.deathCount++; // Incrementa o contador de renascimentos
+    console.log("Inimigo renasceu!");
+  } else {
+    console.log("Inimigo não renasce mais.");
+  }
+}
+
 
 // Capturar as teclas pressionadas
 const keys = {};
@@ -259,26 +285,20 @@ function isWithinAttackRange(player, enemy, range) {
 }
 
 function attackEnemy(player, enemy) {
-    const attackRange = 200;
-    const distance = calculateDistance(
-        player.x + player.width / 2,
-        player.y + player.height / 2,
-        enemy.x + enemy.width / 2,
-        enemy.y + enemy.height / 2
-    );
+  const attackRange = 200;  // A distância do ataque do jogador
+  const distance = calculateDistance(
+      player.x + player.width / 2,
+      player.y + player.height / 2,
+      enemy.x + enemy.width / 2,
+      enemy.y + enemy.height / 2
+  );
 
-    if (distance <= attackRange && enemy.isAlive) {
-        enemy.life -= 50;
-        console.log(`Inimigo atingido! Vida restante: ${enemy.life}`);
-
-        if (enemy.life <= 0) {
-            enemy.isAlive = false;
-            enemy.isExploding = true;
-            enemy.explosionStartTime = performance.now(); // Marca o início da explosão
-            console.log('Inimigo derrotado! Iniciando explosão.');
-        }
-    }
+  if (distance <= attackRange && enemy.isAlive) {
+      enemy.life -= 50; // Reduz 50 de vida no inimigo
+      console.log(`Inimigo atingido! Vida restante: ${enemy.life}`);
+  }
 }
+
 
 function onPlayerAttack(player, enemy) {
     if (player.isAttacking) {
@@ -289,7 +309,7 @@ function onPlayerAttack(player, enemy) {
 
 function drawEnemy() {
   if (!npc.dialogueCompleted && enemy.isAlive) {
-    // Desenha o inimigo normalmente
+    // Desenha o inimigo normalmente, caso ele esteja vivo e o diálogo não tenha sido completado
     const frameX = enemy.frameX;
     const frameY = enemy.frameY;
 
@@ -316,7 +336,7 @@ function drawEnemy() {
       const frameX = frameIndex % columns;   // Determina a posição X do frame
       const frameY = Math.floor(frameIndex / columns); // Determina a posição Y do frame
 
-      // Cada frame é 180x180 px
+      // Cada frame da explosão é 180x180 px
       const frameWidth = 180;
       const frameHeight = 180;
 
@@ -329,26 +349,62 @@ function drawEnemy() {
         enemy.width, enemy.height                 // Tamanho do desenho no canvas
       );
     } else {
-      // Finaliza a explosão
+      // Finaliza a explosão e chama a função para renascer o inimigo
       enemy.isExploding = false;
+      respawnEnemy(); // Chama a função que irá "renascer" o inimigo
       console.log('Explosão concluída.');
     }
   }
 }
 
-
-function updateEnemies(enemies) {
-    for (let i = enemies.length - 1; i >= 0; i--) {
-        const enemy = enemies[i];
-
-        // Remove inimigos cuja explosão foi concluída
-        if (!enemy.isAlive && !enemy.isExploding) {
-            enemies.splice(i, 1); // Remove o inimigo da lista
-            console.log('Inimigo removido do jogo.');
-        }
-    }
+function showVictoryImage() {
+  // Desenha a imagem de vitória no centro da tela
+  const x = (canvas.width - victoryImage.width) / 2;
+  const y = (canvas.height - victoryImage.height) / 2;
+  ctx.drawImage(victoryImage, x, y);
 }
 
+// Função para atualizar o estado do inimigo
+function updateEnemy() {
+  if (enemy.isAlive && enemy.life <= 0) {
+      enemy.isAlive = false;  // Marca o inimigo como morto
+      enemy.isExploding = true; // Começa a animação de explosão
+      enemy.explosionStartTime = Date.now();  // Registra o tempo de início da explosão
+      console.log("Inimigo derrotado!");
+
+      // Incrementa o contador de inimigos derrotados
+      defeatedEnemies++;
+
+      // Verifica se todos os inimigos foram derrotados
+      if (defeatedEnemies === totalEnemies) {
+        showVictoryImage(); // Exibe a mensagem de vitória
+      }
+
+      // Espera 1 segundo para renascer
+      setTimeout(respawnEnemy, 1000);  // Aguarda 1 segundo antes de renascer
+  }
+
+  // Aqui podemos adicionar lógica para atualizar animação de explosão, se necessário.
+  if (enemy.isExploding) {
+      const explosionDuration = 1000;  // Explosão dura 1 segundo
+      const timeElapsed = Date.now() - enemy.explosionStartTime;
+
+      if (timeElapsed > explosionDuration) {
+          enemy.isExploding = false;  // Para a animação de explosão depois de 1 segundo
+          respawnEnemy();  // Renova o inimigo
+      }
+  }
+}
+
+function showVictoryImage() {
+  if (victoryImage.complete) {  // Verifica se a imagem foi carregada
+    const x = (canvas.width - victoryImage.width) / 2;
+    const y = (canvas.height - victoryImage.height) / 2;
+    ctx.drawImage(victoryImage, x, y);
+  } else {
+    console.log('Imagem de vitória ainda não carregada');
+  }
+}
 
 
 // Função de ataque do inimigo
@@ -817,6 +873,12 @@ const targetFPS = 75; // Define o FPS alvo
 const frameDuration = 1000 / targetFPS; // Duração de cada frame em milissegundos
 
 function gameLoop(currentTime) {
+  // Se o jogo já acabou (ou seja, todos os inimigos foram derrotados), não faz mais nada
+  if (defeatedEnemies === totalEnemies) {
+    showVictoryImage(); // Exibe a mensagem de vitória
+    return;  // Interrompe o loop do jogo
+  }
+
   // Calcula o tempo desde o último frame
   const deltaTime = currentTime - lastFrameTime;
 
@@ -847,9 +909,7 @@ function gameLoop(currentTime) {
   drawNPC(); // Desenha o NPC se estiver visível
   moveEnemy(deltaTime); // Movimenta o inimigo proporcional ao tempo
   drawEnemy(); // Desenha o inimigo (se permitido)
-    updateEnemies(enemies);  // Atualiza a lista de inimigos
-
-    
+  updateEnemy(); // Atualiza os inimigos
 
   updatePlayerState(); // Atualiza o estado do jogador (invulnerabilidade)
   checkEnemyCollision(); // Verifica colisão com o inimigo (se permitido)
@@ -858,12 +918,12 @@ function gameLoop(currentTime) {
   updateAllNPCs(deltaTime); // Atualiza a animação dos NPCs proporcional ao tempo
   drawNPC(); // Desenha NPC
 
-     onPlayerAttack(player, enemy);
+  onPlayerAttack(player, enemy);
 
-    // Atualizações no jogo...
-    if (!enemy.isAlive) {
-        // Lógica para remover o inimigo ou exibir sua morte
-    }
+  // Atualizações no jogo...
+  if (!enemy.isAlive) {
+      // Lógica para remover o inimigo ou exibir sua morte
+  }
 
   requestAnimationFrame(gameLoop); // Chama o loop novamente
 }
