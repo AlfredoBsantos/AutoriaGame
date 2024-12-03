@@ -296,7 +296,15 @@ function attackEnemy(player, enemy) {
   if (distance <= attackRange && enemy.isAlive) {
       enemy.life -= 50; // Reduz 50 de vida no inimigo
       console.log(`Inimigo atingido! Vida restante: ${enemy.life}`);
+
+  if (enemy.life <= 0) {
+      enemy.isAlive = false;
+      enemy.isExploding = true;
+      enemy.explosionStartTime = performance.now(); // Marca o início da explosão
+      console.log('Inimigo derrotado! Iniciando explosão.');
+       }
   }
+
 }
 
 
@@ -365,8 +373,8 @@ function showVictoryImage() {
 }
 
 // Função para atualizar o estado do inimigo
-function updateEnemy() {
-  if (enemy.isAlive && enemy.life <= 0) {
+  function updateEnemies(enemies) {
+    if (enemy.isAlive && enemy.life <= 0) {
       enemy.isAlive = false;  // Marca o inimigo como morto
       enemy.isExploding = true; // Começa a animação de explosão
       enemy.explosionStartTime = Date.now();  // Registra o tempo de início da explosão
@@ -384,6 +392,18 @@ function updateEnemy() {
       setTimeout(respawnEnemy, 1000);  // Aguarda 1 segundo antes de renascer
   }
 
+    for (let i = enemies.length - 1; i >= 0; i--) {
+        const enemy = enemies[i];
+
+        // Remove inimigos cuja explosão foi concluída
+        if (!enemy.isAlive && !enemy.isExploding) {
+            enemies.splice(i, 1); // Remove o inimigo da lista
+            console.log('Inimigo removido do jogo.');
+        }
+    }
+}
+
+
   // Aqui podemos adicionar lógica para atualizar animação de explosão, se necessário.
   if (enemy.isExploding) {
       const explosionDuration = 1000;  // Explosão dura 1 segundo
@@ -394,7 +414,6 @@ function updateEnemy() {
           respawnEnemy();  // Renova o inimigo
       }
   }
-}
 
 function showVictoryImage() {
   if (victoryImage.complete) {  // Verifica se a imagem foi carregada
@@ -880,9 +899,11 @@ function gameLoop(currentTime) {
   checkNPCActivation(); // Ativa o NPC se o jogador estiver na área
   handleNPCDialogue(); // Gerencia o diálogo com o NPC
   drawNPC(); // Desenha o NPC se estiver visível
+
   moveEnemy(deltaTime); // Movimenta o inimigo proporcional ao tempo
   drawEnemy(); // Desenha o inimigo (se permitido)
-  updateEnemy(); // Atualiza os inimigos
+  
+  updateEnemies(enemies);  // Atualiza a lista de inimigos
 
   updatePlayerState(); // Atualiza o estado do jogador (invulnerabilidade)
   checkEnemyCollision(); // Verifica colisão com o inimigo (se permitido)
