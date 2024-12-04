@@ -119,17 +119,18 @@ const totalEnemies = 3;   // Total de inimigos no jogo
 
 // Função para reiniciar o inimigo
 function respawnEnemy() {
-  if (enemy.deathCount < 2) {  // Limita a 2 renascimentos
-    // Reinicia a posição do inimigo, vida e estado
-    enemy.x = 200 + Math.random() * 200; // Nova posição aleatória
-    enemy.y = 400 + Math.random() * 200; // Nova posição aleatória
-    enemy.life = 100;  // Vida total
-    enemy.isAlive = true;
-    enemy.isExploding = false;
-    enemy.deathCount++; // Incrementa o contador de renascimentos
-    console.log("Inimigo renasceu!");
+  if (enemy.deathCount < totalEnemies - 1) {
+      setTimeout(() => {
+          enemy.x = 200 + Math.random() * 200; // Nova posição aleatória
+          enemy.y = 400 + Math.random() * 200;
+          enemy.life = 100;
+          enemy.isAlive = true;
+          enemy.isExploding = false;
+          enemy.deathCount++;
+          console.log("Inimigo renasceu!");
+      }, 5500); // 5500ms (5.5 segundos) de atraso
   } else {
-    console.log("Inimigo não renasce mais.");
+      console.log("Inimigo não renasce mais.");
   }
 }
 
@@ -298,11 +299,12 @@ function attackEnemy(player, enemy) {
       console.log(`Inimigo atingido! Vida restante: ${enemy.life}`);
 
   if (enemy.life <= 0) {
+      defeatedEnemies++;
       enemy.isAlive = false;
       enemy.isExploding = true;
       enemy.explosionStartTime = performance.now(); // Marca o início da explosão
       console.log('Inimigo derrotado! Iniciando explosão.');
-       }
+      }
   }
 
 }
@@ -414,16 +416,6 @@ function showVictoryImage() {
           respawnEnemy();  // Renova o inimigo
       }
   }
-
-function showVictoryImage() {
-  if (victoryImage.complete) {  // Verifica se a imagem foi carregada
-    const x = (canvas.width - victoryImage.width) / 2;
-    const y = (canvas.height - victoryImage.height) / 2;
-    ctx.drawImage(victoryImage, x, y);
-  } else {
-    console.log('Imagem de vitória ainda não carregada');
-  }
-}
 
 // Função de ataque do inimigo
 function enemyAttack() {
@@ -867,9 +859,9 @@ const frameDuration = 1000 / targetFPS; // Duração de cada frame em milissegun
 function gameLoop(currentTime) {
   // Se o jogo já acabou (ou seja, todos os inimigos foram derrotados), não faz mais nada
   if (defeatedEnemies === totalEnemies) {
-    showVictoryImage(); // Exibe a mensagem de vitória
-    return;  // Interrompe o loop do jogo
-  }
+    showVictoryImage();
+    return; // Interrompe o loop do jogo
+}
 
   // Calcula o tempo desde o último frame
   const deltaTime = currentTime - lastFrameTime;
